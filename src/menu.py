@@ -1,5 +1,5 @@
+from src.huffman import char_count
 import tkinter as tk
-from tkinter import filedialog, messagebox
 import os
 
 
@@ -32,7 +32,7 @@ class App():
         try:
             content = self.read_file(filepath)
         except Exception as e:
-            messagebox.showerror("Erro", f"Não foi possível ler o arquivo:\n{e}")
+            tk.messagebox.showerror("Erro", f"Não foi possível ler o arquivo:\n{e}")
             return
 
         # Take output file path
@@ -41,11 +41,14 @@ class App():
             return
         #print(f"{outpath}") # Debug
 
+        # Count unique chars
+        chars = char_count(content)
+
         # Save file
         if not self.save_file(outpath, content):
             return
 
-        messagebox.showinfo("Compressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
+        tk.messagebox.showinfo("Compressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
 
 
     def decompress(self):
@@ -53,7 +56,7 @@ class App():
 
 
     def open_file(self):
-        return filedialog.askopenfilename(
+        return tk.filedialog.askopenfilename(
             title="Selecione um arquivo de texto (plain text)",
             filetypes=[("All files", "*.*")]
         )
@@ -74,7 +77,7 @@ class App():
                 f.write(content)
             return True
         except Exception as e:
-            messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
+            tk.messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
             return
 
 
@@ -88,9 +91,9 @@ class App():
         if not os.path.exists(outpath):
             return outpath
         else:
-            resp = messagebox.askyesno("Sobrescrever?", f"O arquivo {os.path.basename(outpath)} já existe. Sobrescrever?")
+            resp = tk.messagebox.askyesno("Sobrescrever?", f"O arquivo {os.path.basename(outpath)} já existe. Sobrescrever?")
             if not resp:
-                outpath = filedialog.asksaveasfilename(
+                outpath = tk.filedialog.asksaveasfilename(
                     defaultextension=".txt",
                     initialfile=os.path.basename(base + "_cmprssd.txt"),
                     initialdir=outfolder,
