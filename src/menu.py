@@ -1,4 +1,5 @@
 from src.huffman import char_count, prefix_tree, prefix_codes
+from tkinter import filedialog, messagebox
 import tkinter as tk
 import os
 
@@ -32,7 +33,7 @@ class App():
         try:
             content = self.read_file(filepath)
         except Exception as e:
-            tk.messagebox.showerror("Erro", f"Não foi possível ler o arquivo:\n{e}")
+            messagebox.showerror("Erro", f"Não foi possível ler o arquivo:\n{e}")
             return
 
         # Take output file path
@@ -41,16 +42,16 @@ class App():
             return
         #print(f"{outpath}") # Debug
 
-        # Count unique chars
+        # Prefix codes
         chars = char_count(content)
         tree = prefix_tree(chars)
-        print(tree)
+        prefix = prefix_codes(tree)
 
         # Save file
         if not self.save_file(outpath, content):
             return
 
-        tk.messagebox.showinfo("Compressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
+        messagebox.showinfo("Compressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
 
 
     def decompress(self):
@@ -58,7 +59,7 @@ class App():
 
 
     def open_file(self):
-        return tk.filedialog.askopenfilename(
+        return filedialog.askopenfilename(
             title="Selecione um arquivo de texto (plain text)",
             filetypes=[("All files", "*.*")]
         )
@@ -79,7 +80,7 @@ class App():
                 f.write(content)
             return True
         except Exception as e:
-            tk.messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
+            messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
             return
 
 
@@ -93,9 +94,9 @@ class App():
         if not os.path.exists(outpath):
             return outpath
         else:
-            resp = tk.messagebox.askyesno("Sobrescrever?", f"O arquivo {os.path.basename(outpath)} já existe. Sobrescrever?")
+            resp = messagebox.askyesno("Sobrescrever?", f"O arquivo {os.path.basename(outpath)} já existe. Sobrescrever?")
             if not resp:
-                outpath = tk.filedialog.asksaveasfilename(
+                outpath = filedialog.asksaveasfilename(
                     defaultextension=".txt",
                     initialfile=os.path.basename(base + "_cmprssd.txt"),
                     initialdir=outfolder,
