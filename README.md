@@ -35,7 +35,7 @@ Abaixo, estão *screenshots* demonstrando um exemplo do funcionamento do sistema
 1. Clone o repositório na pasta de sua preferência:
 
 ```bash
-git clone https://github.com/projeto-de-algoritmos-2025/Grafos2-D30
+git clone https://github.com/projeto-de-algoritmos-2025/Greedy-D30
 ```
 
 2. Navegue até a pasta :

@@ -6,7 +6,7 @@ import os
 class App():
     def __init__(self, root):
         self.root = root
-        self.root.title("Interface Huffman - Compactador")
+        self.root.title("Compactador de Textos - Huffman")
         self.root.resizable(False, False)
 
         frame = tk.Frame(self.root, padx=12, pady=12)
@@ -35,7 +35,7 @@ class App():
             messagebox.showerror("Erro", f"Não foi possível ler o arquivo:\n{e}")
             return
 
-        # Output file path
+        # Take output file path
         outpath = self.outpath(filepath, "compressed/")
         if not outpath:
             return
