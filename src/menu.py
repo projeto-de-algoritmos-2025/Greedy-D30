@@ -22,48 +22,81 @@ class App():
 
 
     def compress(self):
-        filepath = filedialog.askopenfilename(
-            title="Selecione um arquivo de texto (plain text)",
-            filetypes=[("All files", "*.*")]
-        )
+
+        # Select file
+        filepath = self.open_file()
         if not filepath:
             return
 
+        # Read file
         try:
-            try:
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    content = f.read()
-            except UnicodeDecodeError:
-                with open(filepath, 'r', encoding='latin-1') as f:
-                    content = f.read()
+            content = self.read_file(filepath)
         except Exception as e:
             messagebox.showerror("Erro", f"Não foi possível ler o arquivo:\n{e}")
             return
 
-        base, _ = os.path.splitext(filepath)
-        outpath = base + "_converted.txt"
+        # Output file path
+        outpath = self.outpath(filepath, "compressed/")
+        if not outpath:
+            return
+        #print(f"{outpath}") # Debug
 
-        if os.path.exists(outpath):
+        # Save file
+        if not self.save_file(outpath, content):
+            return
+
+        messagebox.showinfo("Compressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
+
+
+    def decompress(self):
+        pass
+
+
+    def open_file(self):
+        return filedialog.askopenfilename(
+            title="Selecione um arquivo de texto (plain text)",
+            filetypes=[("All files", "*.*")]
+        )
+    
+
+    def read_file(self, filepath):
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                return f.read()
+        except UnicodeDecodeError:
+            with open(filepath, 'r', encoding='latin-1') as f:
+                return f.read()
+    
+
+    def save_file(self, outpath, content):
+        try:
+            with open(outpath, 'w', encoding='utf-8') as f:
+                f.write(content)
+            return True
+        except Exception as e:
+            messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
+            return
+
+
+    def outpath(self, filepath, outfolder):
+        os.makedirs(outfolder, exist_ok=True)
+        filename = os.path.basename(filepath)
+
+        base, ext = os.path.splitext(filename)
+        outpath = outfolder + base + "_cmprssd.txt"
+
+        if not os.path.exists(outpath):
+            return outpath
+        else:
             resp = messagebox.askyesno("Sobrescrever?", f"O arquivo {os.path.basename(outpath)} já existe. Sobrescrever?")
             if not resp:
                 outpath = filedialog.asksaveasfilename(
                     defaultextension=".txt",
-                    initialfile=os.path.basename(base + "_converted.txt"),
+                    initialfile=os.path.basename(base + "_cmprssd.txt"),
+                    initialdir=outfolder,
                     title="Salvar como",
                     filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
                 )
                 if not outpath:
                     return
-
-        try:
-            with open(outpath, 'w', encoding='utf-8') as f:
-                f.write(content)
-        except Exception as e:
-            messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
-            return
-
-        messagebox.showinfo("Pronto", f"Conteúdo salvo em:\n{outpath}")
-
-
-    def decompress(self):
-        pass
+            return outpath
