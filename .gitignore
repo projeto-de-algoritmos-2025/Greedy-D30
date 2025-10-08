@@ -1,0 +1,11 @@
+# Ambientes
+venv/
+.env/
+
+# Arquivos de ambiente
+*.pyc
+__pycache__/
+
+# Arquivos temporários
+compressed/
+decompressed/
