@@ -44,7 +44,7 @@ class App():
 
         # Prefix codes
         chars = char_count(content)
-        tree = prefix_tree(chars)
+        n, tree = prefix_tree(chars)
         prefix = prefix_codes(tree)
 
         # Save file
