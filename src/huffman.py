@@ -1,23 +1,22 @@
-from heapq_alt import heapify, heappush, heappop
-
-
+# Gera uma lista com a contagem de cada caracter na string
 def char_count(text):
     count = []
-    for character in set(text):
+    for character in set(text): # Obs: cada execução do set gera um "count" em ordem diferente
         count.append((text.count(character), character))
     return count # Lista de tuplas com a contagem e o caracter
 
-
+# Gera uma árvore de prefixos, representada por vetores
 def prefix_tree(count):
-    heapify(count)
     while(len(count)>1):
-        x = heappop(count)
-        y = heappop(count)
+        count.sort(key=lambda h: h[0])
+        x, y = count.pop(0), count.pop(0)
+
         value = (x[0] + y[0], [x[1], y[1]])
-        heappush(count, value)
+        count.append(value)
+    
     return count[0][1] # Esquema de vetores representando a árvore de prefixos
 
-
+# Gera um dicionário contendo os prefix code de cada caracter
 def prefix_codes(tree):
     stack = [('0', tree)]
     codes = {}
