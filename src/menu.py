@@ -1,4 +1,4 @@
-from src.huffman import char_count
+from src.huffman import char_count, prefix_tree, prefix_codes
 import tkinter as tk
 import os
 
@@ -43,6 +43,8 @@ class App():
 
         # Count unique chars
         chars = char_count(content)
+        tree = prefix_tree(chars)
+        print(tree)
 
         # Save file
         if not self.save_file(outpath, content):
