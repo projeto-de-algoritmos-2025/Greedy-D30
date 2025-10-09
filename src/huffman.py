@@ -7,6 +7,7 @@ def char_count(text):
         count.append((text.count(character), character))
     return count # Lista de tuplas com a contagem e o caracter
 
+
 def prefix_tree(count):
     heapify(count)
     while(len(count)>1):
@@ -16,32 +17,22 @@ def prefix_tree(count):
         heappush(count, value)
     return count[0][1] # Esquema de vetores representando a árvore de prefixos
 
+
 def prefix_codes(tree):
-    codes, prefix = {}, ''
-    tree = [tree]
-    current_branch = tree
+    stack = [('0', tree)]
+    codes = {}
 
-    while tree != [None]:
-        #print(f'>>> {codes} // {prefix} // {tree}')
-
-        if(current_branch[0] != None):
-            n = 0
-        elif(current_branch[-1] != None):
-            n = 1
+    while len(stack) > 0:
+        #print(f'>>> {codes} // {stack}') # Debug
+        if(type(stack[-1][1]) == str): # Se for uma string (folha da árvore)
+           codes[stack[-1][1]] = stack[-1][0][1:]
+           stack.pop(-1)
         else:
-            current_branch = tree
-            for c in prefix[:-1]:
-                current_branch = current_branch[int(c)]
-            current_branch[int(prefix[-1])] = None
-            prefix = prefix[:-1]
-            continue
+            if(len(stack[-1][1]) == 2): # Se tiver 2 filhos
+                parent = stack.pop(-1)
+                stack.append((parent[0]+'1', parent[1][1]))
+                stack.append((parent[0]+'0', parent[1][0]))
+            elif(len(stack[-1][1]) == 1):  # Se tiver 1 filho
+                stack[-1] = (stack[-1][0]+'0', stack[-1][1][0])
 
-        if(type(current_branch[n]) == list):
-            prefix += f'{n}'
-            current_branch = current_branch[n]
-        elif(type(current_branch[n]) == str):
-            binary = prefix + str(n)
-            codes[current_branch[n]] = binary[1:]
-            current_branch[n] = None
-    return codes
-
+    return codes # Dicionário com os caracteres (keys) e seus prefixos (values)
