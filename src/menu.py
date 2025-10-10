@@ -7,6 +7,17 @@ import json
 import os
 
 
+# Variáveis Globais
+cmprssd_folder = 'compressed/' # Pasta dos arquivos comprimidos
+dcmprssd_folder = 'decompressed/' # Pasta dos arquivos descomprimidos
+
+cmprssd_id = '_cmprssd' # Identificador dos arquivos comprimidos
+dcmprssd_id = '_dcmprssd' # Identificador dos arquivos descomprimidos
+
+bin_ext = '.huff' # Extensão do arquivo binário comprimido
+
+
+# Classe do Sistema
 class App():
     def __init__(self, root):
         self.root = root
@@ -30,25 +41,26 @@ class App():
         checkbox.grid(row=4, column=1, padx=5, pady=(16, 0))
 
 
-    def compress(self):
 
+    def compress(self):
         # Select file
-        filepath = self.open_file()
+        filepath = filedialog.askopenfilename(
+            title="Selecione um arquivo de texto (plain text)",
+            filetypes=[("All files", "*.*")]
+        )
         if not filepath:
             return
 
         # Read file
         try:
-            content = self.read_file(filepath)
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            with open(filepath, 'r', encoding='latin-1') as f:
+                content =  f.read()
         except Exception as e:
             messagebox.showerror("Erro", f"Não foi possível ler o arquivo:\n{e}")
             return
-
-        # Take output file path
-        outpath = self.outpath(filepath, 'compressed/', '_cmprssd', '.huff')
-        if not outpath:
-            return
-        #print(f"{outpath}") # Debug
 
         # Prefix codes
         chars = char_count(content)
@@ -61,12 +73,11 @@ class App():
             binary_content += bitarray(prefix[character])
 
         # Header
-        _, ext = os.path.splitext(filepath)
         header = {
             'header': 0, # Quantidade de bytes do header codificado
             'content': math.ceil(len(binary_content)/8), # Quantidade de bytes do conteúdo codificado
             'string': n, # Quantidade de caracteres do conteúdo original
-            'ext': ext, # Entensão do arquivo original
+            'ext': os.path.splitext(filepath)[1], # Entensão do arquivo original
             'prefix': prefix # Dicionário de prefixos
         }
 
@@ -74,30 +85,40 @@ class App():
         header_bytes = json.dumps(header).encode('utf-8') # Serializa cada caracter do dicionário como um byte
         header['header'] = len(header_bytes)-1 # Salva a quantidade de bytes do header
         bytes_number = len(str(header['header'])) # Quantidade de bytes da quantidade de bytes do header
-        if(len(str((bytes_number + header['header']))) > bytes_number): # Se haverá aumento de 1 byte
-            header['header'] += bytes_number + 1
-        else:
-            header['header'] += bytes_number
+
+        val = len(str((bytes_number + header['header']))) > bytes_number # Se haverá aumento de 1 byte
+        header['header'] += bytes_number + val
+
         size_bytes = json.dumps(header['header']).encode('utf-8') # Serializa o tamanho do header
         header_bytes = b'{"header": ' + size_bytes + header_bytes[12:] # Dicionário serializado, com seu próprio tamanho
         
         # Visualizar o Header
         if(self.header_bool.get()):
-            print('-'*100)
-            for key, value in header.items():
-                print(f'{key}: {value};')
-            print('-'*100)
+            print(f'{'-'*100}\n{header}\n{'-'*100}')
 
+        # Take output file path
+        outpath = self.outpath(filepath, cmprssd_folder, cmprssd_id, bin_ext)
+        if not outpath:
+            return
         # Save file
-        if not self.save_file(outpath, header_bytes, binary_content):
+        try:
+            with open(outpath, 'wb') as f:
+                f.write(header_bytes)
+                binary_content.tofile(f)
+        except Exception as e:
+            messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
             return
 
         messagebox.showinfo("Compressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
 
 
+
     def decompress(self):
         # Select file
-        filepath = self.open_file()
+        filepath = filedialog.askopenfilename(
+            title="Selecione um arquivo de texto (plain text)",
+            filetypes=[("All files", "*.*")]
+        )
         if not filepath:
             return
 
@@ -126,10 +147,13 @@ class App():
             if(current_prefix in prefix.values()):
                 content += next(key for key, value in prefix.items() if value == current_prefix)
                 current_prefix = ''
+
+        while(len(content) > header['string']):
+            content = content[:-1]
         ##################################
         
         # Take output file path
-        outpath = self.outpath(filepath, 'decompressed/', '_dcmprssd', header['ext'])
+        outpath = self.outpath(filepath, dcmprssd_folder, dcmprssd_id, header['ext'])
         if not outpath:
             return
 
@@ -141,41 +165,15 @@ class App():
             return
         
         messagebox.showinfo("Decompressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
-
-
-    def open_file(self):
-        return filedialog.askopenfilename(
-            title="Selecione um arquivo de texto (plain text)",
-            filetypes=[("All files", "*.*")]
-        )
     
 
-    def read_file(self, filepath):
-        try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                return f.read()
-        except UnicodeDecodeError:
-            with open(filepath, 'r', encoding='latin-1') as f:
-                return f.read()
-    
 
-    def save_file(self, outpath, header, content):
-        try:
-            with open(outpath, 'wb') as f:
-                f.write(header)
-                content.tofile(f)
-            return True
-        except Exception as e:
-            messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
-            return
-
-
-    def outpath(self, filepath, outfolder, op, ext):
+    def outpath(self, filepath, outfolder, id, ext):
         os.makedirs(outfolder, exist_ok=True)
         filename = os.path.basename(filepath)
 
         base, _ = os.path.splitext(filename)
-        outpath = outfolder + base + op + ext
+        outpath = outfolder + base + id + ext
 
         if not os.path.exists(outpath):
             return outpath
@@ -184,7 +182,7 @@ class App():
             if not resp:
                 outpath = filedialog.asksaveasfilename(
                     defaultextension=ext,
-                    initialfile=os.path.basename(base + op),
+                    initialfile=os.path.basename(base + id),
                     initialdir=outfolder,
                     title="Salvar como",
                     filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
