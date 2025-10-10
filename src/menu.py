@@ -1,6 +1,7 @@
 from src.huffman import char_count, prefix_tree, prefix_codes
 from tkinter import filedialog, messagebox
 import tkinter as tk
+import json
 import os
 
 
@@ -55,11 +56,19 @@ class App():
         # Header
         _, ext = os.path.splitext(filepath)
         header = {
+            'header_length': 9999, # Reserva 4 bytes para o tamanho do header
+            'string_length': n,
             'extension': ext,
-            'length': n,
             'prefix_codes': prefix
         }
+
+        # Serialização do Header
+        header_bytes = json.dumps(header).encode('utf-8') # Serializa cada caracter do dicionário como um byte
+        header["header_length"] = len(header_bytes) # Salva a quantidade de bytes do header
+        size_bytes = header["header_length"].to_bytes(4) # Converte o número de bytes para binário
+        header_bytes = b'{"header_length": ' + size_bytes + header_bytes[22:] # Dicionário serializado, com seu próprio tamanho
         
+        # Visualizar o Header
         if(self.header_bool.get()):
             print('-'*100)
             for key, value in header.items():
@@ -67,7 +76,7 @@ class App():
             print('-'*100)
 
         # Save file
-        if not self.save_file(outpath, content):
+        if not self.save_file(outpath, header_bytes, content):
             return
 
         messagebox.showinfo("Compressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
@@ -93,10 +102,10 @@ class App():
                 return f.read()
     
 
-    def save_file(self, outpath, content):
+    def save_file(self, outpath, header, content):
         try:
-            with open(outpath, 'w', encoding='utf-8') as f:
-                f.write(content)
+            with open(outpath, 'wb') as f:
+                f.write(header)
             return True
         except Exception as e:
             messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
@@ -108,7 +117,7 @@ class App():
         filename = os.path.basename(filepath)
 
         base, ext = os.path.splitext(filename)
-        outpath = outfolder + base + "_cmprssd.txt"
+        outpath = outfolder + base + "_cmprssd.huff"
 
         if not os.path.exists(outpath):
             return outpath
