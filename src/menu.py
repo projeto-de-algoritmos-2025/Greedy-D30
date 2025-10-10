@@ -9,17 +9,22 @@ class App():
         self.root = root
         self.root.title("Compactador de Textos - Huffman")
         self.root.resizable(False, False)
+        self.header_bool = tk.BooleanVar()
 
-        frame = tk.Frame(self.root, padx=12, pady=12)
+        frame = tk.Frame(self.root, padx=32, pady=8)
         frame.pack()
 
+        title = tk.Label(frame, text="Compressor de\nHuffman", font='sylfaen')
         btn_compress = tk.Button(frame, text="Compactar", width=12, command=self.compress)
         btn_decompress = tk.Button(frame, text="Descompactar", width=12, state='disabled', command=self.decompress)
         btn_exit = tk.Button(frame, text="Sair", width=12, command=self.root.destroy)
+        checkbox = tk.Checkbutton(frame, text="Printar Header", variable=self.header_bool)
 
-        btn_compress.grid(row=0, column=0, padx=5, pady=5)
-        btn_decompress.grid(row=0, column=1, padx=5, pady=5)
-        btn_exit.grid(row=0, column=2, padx=5, pady=5)
+        title.grid(row=0, column=1, padx=0, pady=(0, 16))
+        btn_compress.grid(row=1, column=1, padx=5, pady=5)
+        btn_decompress.grid(row=2, column=1, padx=5, pady=5)
+        btn_exit.grid(row=3, column=1, padx=5, pady=5)
+        checkbox.grid(row=4, column=1, padx=5, pady=(16, 0))
 
 
     def compress(self):
@@ -46,6 +51,20 @@ class App():
         chars = char_count(content)
         n, tree = prefix_tree(chars)
         prefix = prefix_codes(tree)
+
+        # Header
+        _, ext = os.path.splitext(filepath)
+        header = {
+            'extension': ext,
+            'length': n,
+            'prefix_codes': prefix
+        }
+        
+        if(self.header_bool.get()):
+            print('-'*100)
+            for key, value in header.items():
+                print(f'{key}: {value};')
+            print('-'*100)
 
         # Save file
         if not self.save_file(outpath, content):
