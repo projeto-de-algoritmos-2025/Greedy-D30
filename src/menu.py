@@ -19,7 +19,7 @@ class App():
 
         title = tk.Label(frame, text="Compressor de\nHuffman", font='sylfaen')
         btn_compress = tk.Button(frame, text="Compactar", width=12, command=self.compress)
-        btn_decompress = tk.Button(frame, text="Descompactar", width=12, state='disabled', command=self.decompress)
+        btn_decompress = tk.Button(frame, text="Descompactar", width=12, command=self.decompress)
         btn_exit = tk.Button(frame, text="Sair", width=12, command=self.root.destroy)
         checkbox = tk.Checkbutton(frame, text="Printar Header", variable=self.header_bool)
 
@@ -45,7 +45,7 @@ class App():
             return
 
         # Take output file path
-        outpath = self.outpath(filepath, "compressed/")
+        outpath = self.outpath(filepath, 'compressed/', '_cmprssd', '.huff')
         if not outpath:
             return
         #print(f"{outpath}") # Debug
@@ -96,7 +96,51 @@ class App():
 
 
     def decompress(self):
-        pass
+        # Select file
+        filepath = self.open_file()
+        if not filepath:
+            return
+
+        # Read file
+        try:
+            with open(filepath, 'rb') as f:
+                bits = bitarray()
+                bits.fromfile(f)
+        except Exception as e:
+            messagebox.showerror("Erro", f"Não foi possível ler o arquivo:\n{e}")
+            return
+        
+        ##################################
+        q = bits.index(bitarray(b', '))
+        o = int(bits[88:q].tobytes())
+
+        header = json.loads(bits[:o*8].tobytes().decode('utf-8'))
+        prefix = header['prefix']
+
+        content_bits = bits[o*8:]
+        content = ''
+        current_prefix = ''
+
+        for bit in content_bits:
+            current_prefix += f'{bit}'
+            if(current_prefix in prefix.values()):
+                content += next(key for key, value in prefix.items() if value == current_prefix)
+                current_prefix = ''
+        ##################################
+        
+        # Take output file path
+        outpath = self.outpath(filepath, 'decompressed/', '_dcmprssd', header['ext'])
+        if not outpath:
+            return
+
+        try:
+            with open(outpath, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except Exception as e:
+            messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
+            return
+        
+        messagebox.showinfo("Decompressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
 
 
     def open_file(self):
@@ -126,12 +170,12 @@ class App():
             return
 
 
-    def outpath(self, filepath, outfolder):
+    def outpath(self, filepath, outfolder, op, ext):
         os.makedirs(outfolder, exist_ok=True)
         filename = os.path.basename(filepath)
 
-        base, ext = os.path.splitext(filename)
-        outpath = outfolder + base + "_cmprssd.huff"
+        base, _ = os.path.splitext(filename)
+        outpath = outfolder + base + op + ext
 
         if not os.path.exists(outpath):
             return outpath
@@ -139,8 +183,8 @@ class App():
             resp = messagebox.askyesno("Sobrescrever?", f"O arquivo {os.path.basename(outpath)} já existe. Sobrescrever?")
             if not resp:
                 outpath = filedialog.asksaveasfilename(
-                    defaultextension=".txt",
-                    initialfile=os.path.basename(base + "_cmprssd.txt"),
+                    defaultextension=ext,
+                    initialfile=os.path.basename(base + op),
                     initialdir=outfolder,
                     title="Salvar como",
                     filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
