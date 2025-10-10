@@ -1,6 +1,8 @@
 from src.huffman import char_count, prefix_tree, prefix_codes
+from bitarray import bitarray
 from tkinter import filedialog, messagebox
 import tkinter as tk
+import math
 import json
 import os
 
@@ -53,25 +55,31 @@ class App():
         n, tree = prefix_tree(chars)
         prefix = prefix_codes(tree)
 
+        # Serializar o conteúdo
+        binary_content = bitarray('')
+        for character in content:
+            binary_content += bitarray(prefix[character])
+
         # Header
         _, ext = os.path.splitext(filepath)
         header = {
-            'header_length': 0,
-            'string_length': n,
-            'extension': ext,
-            'prefix_codes': prefix
+            'header': 0, # Quantidade de bytes do header codificado
+            'content': math.ceil(len(binary_content)/8), # Quantidade de bytes do conteúdo codificado
+            'string': n, # Quantidade de caracteres do conteúdo original
+            'ext': ext, # Entensão do arquivo original
+            'prefix': prefix # Dicionário de prefixos
         }
 
         # Serializar o Header
         header_bytes = json.dumps(header).encode('utf-8') # Serializa cada caracter do dicionário como um byte
-        header["header_length"] = len(header_bytes)-1 # Salva a quantidade de bytes do header
-        bytes_number = len(str(header["header_length"])) # Quantidade de bytes da quantidade de bytes do header
-        if(len(str((bytes_number + header["header_length"]))) > bytes_number): # Se haverá aumento de 1 byte
-            header["header_length"] += bytes_number + 1
+        header['header'] = len(header_bytes)-1 # Salva a quantidade de bytes do header
+        bytes_number = len(str(header['header'])) # Quantidade de bytes da quantidade de bytes do header
+        if(len(str((bytes_number + header['header']))) > bytes_number): # Se haverá aumento de 1 byte
+            header['header'] += bytes_number + 1
         else:
-            header["header_length"] += bytes_number
-        size_bytes = json.dumps(header["header_length"]).encode('utf-8') # Serializa o tamanho do header
-        header_bytes = b'{"header_length": ' + size_bytes + header_bytes[19:] # Dicionário serializado, com seu próprio tamanho
+            header['header'] += bytes_number
+        size_bytes = json.dumps(header['header']).encode('utf-8') # Serializa o tamanho do header
+        header_bytes = b'{"header": ' + size_bytes + header_bytes[12:] # Dicionário serializado, com seu próprio tamanho
         
         # Visualizar o Header
         if(self.header_bool.get()):
@@ -81,7 +89,7 @@ class App():
             print('-'*100)
 
         # Save file
-        if not self.save_file(outpath, header_bytes, content):
+        if not self.save_file(outpath, header_bytes, binary_content):
             return
 
         messagebox.showinfo("Compressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
@@ -111,6 +119,7 @@ class App():
         try:
             with open(outpath, 'wb') as f:
                 f.write(header)
+                content.tofile(f)
             return True
         except Exception as e:
             messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
