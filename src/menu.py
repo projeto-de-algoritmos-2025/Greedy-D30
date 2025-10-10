@@ -56,17 +56,22 @@ class App():
         # Header
         _, ext = os.path.splitext(filepath)
         header = {
-            'header_length': 9999, # Reserva 4 bytes para o tamanho do header
+            'header_length': 0,
             'string_length': n,
             'extension': ext,
             'prefix_codes': prefix
         }
 
-        # Serialização do Header
+        # Serializar o Header
         header_bytes = json.dumps(header).encode('utf-8') # Serializa cada caracter do dicionário como um byte
-        header["header_length"] = len(header_bytes) # Salva a quantidade de bytes do header
-        size_bytes = header["header_length"].to_bytes(4) # Converte o número de bytes para binário
-        header_bytes = b'{"header_length": ' + size_bytes + header_bytes[22:] # Dicionário serializado, com seu próprio tamanho
+        header["header_length"] = len(header_bytes)-1 # Salva a quantidade de bytes do header
+        bytes_number = len(str(header["header_length"])) # Quantidade de bytes da quantidade de bytes do header
+        if(len(str((bytes_number + header["header_length"]))) > bytes_number): # Se haverá aumento de 1 byte
+            header["header_length"] += bytes_number + 1
+        else:
+            header["header_length"] += bytes_number
+        size_bytes = json.dumps(header["header_length"]).encode('utf-8') # Serializa o tamanho do header
+        header_bytes = b'{"header_length": ' + size_bytes + header_bytes[19:] # Dicionário serializado, com seu próprio tamanho
         
         # Visualizar o Header
         if(self.header_bool.get()):
