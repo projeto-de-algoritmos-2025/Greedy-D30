@@ -11,14 +11,16 @@ import os
 cmprssd_folder = 'compressed/' # Pasta dos arquivos comprimidos
 dcmprssd_folder = 'decompressed/' # Pasta dos arquivos descomprimidos
 
-cmprssd_id = '_cmprssd' # Identificador dos arquivos comprimidos
-dcmprssd_id = '_dcmprssd' # Identificador dos arquivos descomprimidos
+cmprssd_id = '_cmp' # Identificador dos arquivos comprimidos
+dcmprssd_id = '_dcmp' # Identificador dos arquivos descomprimidos
 
 bin_ext = '.huff' # Extensão do arquivo binário comprimido
 
 
 # Classe do Sistema
 class App():
+    
+    # Esquematiza a interface do tkinter
     def __init__(self, root):
         self.root = root
         self.root.title("Compactador de Textos - Huffman")
@@ -29,8 +31,8 @@ class App():
         frame.pack()
 
         title = tk.Label(frame, text="Compressor de\nHuffman", font='sylfaen')
-        btn_compress = tk.Button(frame, text="Compactar", width=12, command=self.compress)
-        btn_decompress = tk.Button(frame, text="Descompactar", width=12, command=self.decompress)
+        btn_compress = tk.Button(frame, text="Compactar", width=12, command=self.on_compress)
+        btn_decompress = tk.Button(frame, text="Descompactar", width=12, command=self.on_decompress)
         btn_exit = tk.Button(frame, text="Sair", width=12, command=self.root.destroy)
         checkbox = tk.Checkbutton(frame, text="Printar Header", variable=self.header_bool)
 
@@ -40,89 +42,100 @@ class App():
         btn_exit.grid(row=3, column=1, padx=5, pady=5)
         checkbox.grid(row=4, column=1, padx=5, pady=(16, 0))
 
+################################################################################################################################
 
-
-    def compress(self):
-        # Select file
+    # Abre e lê o arquivo, e salva a compressão em um binário
+    def on_compress(self):
+        # Selecionar arquivo para compressão
         filepath = filedialog.askopenfilename(
             title="Selecione um arquivo de texto (plain text)",
+            initialdir='.',
             filetypes=[("All files", "*.*")]
         )
         if not filepath:
             return
 
-        # Read file
+        # Ler conteúdo do arquivo
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 content = f.read()
-        except UnicodeDecodeError:
-            with open(filepath, 'r', encoding='latin-1') as f:
-                content =  f.read()
         except Exception as e:
             messagebox.showerror("Erro", f"Não foi possível ler o arquivo:\n{e}")
             return
 
-        # Prefix codes
+        # Obter sequências binárias para o header e o conteúdo
+        bin_header, bin_content = self.compression(filepath, content)
+
+        # Obter path do arquivo binário
+        outpath = self.outpath(filepath, cmprssd_folder, cmprssd_id, bin_ext)
+        if not outpath:
+            return
+        
+        # Salvar header + conteúdo serializados no arquivo
+        try:
+            with open(outpath, 'wb') as f:
+                f.write(bin_header)
+                bin_content.tofile(f)
+        except Exception as e:
+            messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
+            return
+
+        # Mensagem de saída (compressão bem-sucedida)
+        messagebox.showinfo("Compressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
+
+    # Codifica a sequêcia de caracteres do arquivo desejado e gera um header
+    def compression(self, filepath, content):
+        # Obter os prefix codes
         chars = char_count(content)
         n, tree = prefix_tree(chars)
         prefix = prefix_codes(tree)
 
         # Serializar o conteúdo
-        binary_content = bitarray('')
-        for character in content:
-            binary_content += bitarray(prefix[character])
+        bin_content = bitarray('')
+        for char in content:
+            bin_content += bitarray(prefix[char])
 
-        # Header
+        # Montar o header
         header = {
             'header': 0, # Quantidade de bytes do header codificado
-            'content': math.ceil(len(binary_content)/8), # Quantidade de bytes do conteúdo codificado
+            'content': math.ceil(len(bin_content)/8), # Quantidade de bytes do conteúdo codificado
             'string': n, # Quantidade de caracteres do conteúdo original
             'ext': os.path.splitext(filepath)[1], # Entensão do arquivo original
             'prefix': prefix # Dicionário de prefixos
         }
 
         # Serializar o Header
-        header_bytes = json.dumps(header).encode('utf-8') # Serializa cada caracter do dicionário como um byte
-        header['header'] = len(header_bytes)-1 # Salva a quantidade de bytes do header
+        bin_header = json.dumps(header).encode('utf-8') # Serializa cada caracter do dicionário como um byte
+        header['header'] = len(bin_header)-1 # Salva a quantidade de bytes do header
+        
         bytes_number = len(str(header['header'])) # Quantidade de bytes da quantidade de bytes do header
-
         val = len(str((bytes_number + header['header']))) > bytes_number # Se haverá aumento de 1 byte
-        header['header'] += bytes_number + val
+        header['header'] += bytes_number + val # Corrige o número de bytes
 
-        size_bytes = json.dumps(header['header']).encode('utf-8') # Serializa o tamanho do header
-        header_bytes = b'{"header": ' + size_bytes + header_bytes[12:] # Dicionário serializado, com seu próprio tamanho
+        size_bytes = json.dumps(header['header']).encode('utf-8') # Serializa em bytes o tamanho do header
+        bin_header = b'{"header": ' + size_bytes + bin_header[12:] # Dicionário serializado, com seu próprio tamanho
         
         # Visualizar o Header
         if(self.header_bool.get()):
             print(f'{'-'*100}\n{header}\n{'-'*100}')
+        
+        # Retornar header e conteúdo serializados
+        return bin_header, bin_content
 
-        # Take output file path
-        outpath = self.outpath(filepath, cmprssd_folder, cmprssd_id, bin_ext)
-        if not outpath:
-            return
-        # Save file
-        try:
-            with open(outpath, 'wb') as f:
-                f.write(header_bytes)
-                binary_content.tofile(f)
-        except Exception as e:
-            messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
-            return
+################################################################################################################################
 
-        messagebox.showinfo("Compressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
-
-
-
-    def decompress(self):
-        # Select file
+    # Abre e lê o arquivo binário, e salva a descompressão em outro arquivo
+    def on_decompress(self):
+        # Selecionar arquivo para descompressão
         filepath = filedialog.askopenfilename(
             title="Selecione um arquivo de texto (plain text)",
+            initialdir='.',
             filetypes=[("All files", "*.*")]
         )
         if not filepath:
             return
 
-        # Read file
+        # Ler conteúdo binário do arquivo
         try:
             with open(filepath, 'rb') as f:
                 bits = bitarray()
@@ -131,32 +144,15 @@ class App():
             messagebox.showerror("Erro", f"Não foi possível ler o arquivo:\n{e}")
             return
         
-        ##################################
-        q = bits.index(bitarray(b', '))
-        o = int(bits[88:q].tobytes())
-
-        header = json.loads(bits[:o*8].tobytes().decode('utf-8'))
-        prefix = header['prefix']
-
-        content_bits = bits[o*8:]
-        content = ''
-        current_prefix = ''
-
-        for bit in content_bits:
-            current_prefix += f'{bit}'
-            if(current_prefix in prefix.values()):
-                content += next(key for key, value in prefix.items() if value == current_prefix)
-                current_prefix = ''
-
-        while(len(content) > header['string']):
-            content = content[:-1]
-        ##################################
+        # Obter o header e o conteúdo desserializados
+        header, content = self.decompression(bits)
         
-        # Take output file path
+        # Obter path do arquivo de saída
         outpath = self.outpath(filepath, dcmprssd_folder, dcmprssd_id, header['ext'])
         if not outpath:
             return
 
+        # Salvar o conteúdo desserializado no arquivo
         try:
             with open(outpath, 'w', encoding='utf-8') as f:
                 f.write(content)
@@ -164,29 +160,52 @@ class App():
             messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
             return
         
-        messagebox.showinfo("Decompressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
+        # Mensagem de saída (descompressão bem-sucedida)
+        messagebox.showinfo("Descompressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
     
+    # Decodifica a sequêcia de binários do arquivo desejado
+    def decompression(self, bits):
+        # Recuperar a quantidade de bytes do header e depois o header
+        header_bytes_end = bits.index(bitarray(b', '))
+        header_bytes = int(bits[88:header_bytes_end].tobytes())
+        header = json.loads(bits[:header_bytes*8].tobytes().decode('utf-8'))
 
+        # Recuperar o conteúdo
+        content_bits = bits[header_bytes*8:] # Recupera os bits do conteúdo
+        prefix = {v: k for k, v in header['prefix'].items()} # Dicionário invertido de prefixos, para facilitar acessos
+        content, current_prefix = '', '' # String para o conteúdo e string de bits para procura de prefixos
 
+        for bit in content_bits: # Itera pelos bits, procurando correspondências no dicionário de prefixos
+            current_prefix += f'{bit}'
+            if(current_prefix in prefix.keys()):
+                content += prefix[current_prefix]
+                current_prefix = ''
+
+        # Remover caracteres extras causados pela extensão de bits do bitarray
+        while(len(content) > header['string']):
+            content = content[:-1]
+        
+        # Retornar header e conteúdo desserializados
+        return header, content
+
+################################################################################################################################
+
+    # Retorna uma string com o path do arquivo de saída (e resolve conflitos)
     def outpath(self, filepath, outfolder, id, ext):
+        # Criar o diretório de saída e obter o path desejado
         os.makedirs(outfolder, exist_ok=True)
-        filename = os.path.basename(filepath)
-
-        base, _ = os.path.splitext(filename)
+        base, _ = os.path.splitext(os.path.basename(filepath))
         outpath = outfolder + base + id + ext
 
+        # Verificar a existência do path desejado
         if not os.path.exists(outpath):
             return outpath
         else:
             resp = messagebox.askyesno("Sobrescrever?", f"O arquivo {os.path.basename(outpath)} já existe. Sobrescrever?")
-            if not resp:
-                outpath = filedialog.asksaveasfilename(
-                    defaultextension=ext,
-                    initialfile=os.path.basename(base + id),
-                    initialdir=outfolder,
-                    title="Salvar como",
-                    filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
-                )
-                if not outpath:
-                    return
-            return outpath
+            return filedialog.asksaveasfilename(
+                defaultextension=ext,
+                initialfile=base + id,
+                initialdir=outfolder,
+                title="Salvar como",
+                filetypes=[("All files", "*.*")]
+            ) if not resp else outpath
