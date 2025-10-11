@@ -14,7 +14,10 @@ dcmprssd_folder = 'decompressed/' # Pasta dos arquivos descomprimidos
 cmprssd_id = '_cmp' # Identificador dos arquivos comprimidos
 dcmprssd_id = '_dcmp' # Identificador dos arquivos descomprimidos
 
-bin_ext = '.huff' # Extensão do arquivo binário comprimido
+bin_ext = ".huff" # Extensão do arquivo binário comprimido
+plain_ext = "*.txt;*.md;*.csv;*.log;*.ini;*.conf;*.tsv;*.json;*.xml;*.html;*.yml;*.yaml;*.dockerfile;" \
+            "*.py;*.c;*.cpp;*.h;*.java;*.js;*.rb;*.php;*.go;*.rs;*.swift;" \
+            "*.ts;*.kt;*.pl;*.lua;*.sh;*.r;*.m;*.scala;*.vhdl;*.hs;*.m;" # Extensões de arquivos para compressão
 
 
 # Classe do Sistema
@@ -50,7 +53,7 @@ class App():
         filepath = filedialog.askopenfilename(
             title="Selecione um arquivo de texto (plain text)",
             initialdir='.',
-            filetypes=[("All files", "*.*")]
+            filetypes=[("Plain Text files", plain_ext)]
         )
         if not filepath:
             return
@@ -129,8 +132,8 @@ class App():
         # Selecionar arquivo para descompressão
         filepath = filedialog.askopenfilename(
             title="Selecione um arquivo de texto (plain text)",
-            initialdir='.',
-            filetypes=[("All files", "*.*")]
+            initialdir=".",
+            filetypes=[("Binary files", f"*{bin_ext}")]
         )
         if not filepath:
             return
@@ -207,5 +210,5 @@ class App():
                 initialfile=base + id,
                 initialdir=outfolder,
                 title="Salvar como",
-                filetypes=[("All files", "*.*")]
+                filetypes=[("All files", f"*{ext}")]
             ) if not resp else outpath
