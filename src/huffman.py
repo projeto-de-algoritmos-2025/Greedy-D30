@@ -4,14 +4,11 @@ def char_count(text):
     for character in set(text): # Obs: cada execução do set gera um "count" em ordem diferente
         count.append((text.count(character), character))
 
-    return count # Lista de tuplas com a contagem e o caracter
+    return [(count[0][0], [count[0][1]])] if len(count) == 1 else count # Lista de tuplas com a contagem e o caracter
 
 
 # Gera uma árvore de prefixos, representada por vetores
 def prefix_tree(count):
-    if(len(count) == 1):
-        count[0] = (count[0][0], [count[0][1]])
-    
     while(len(count)>1):
         count.sort(key=lambda h: h[0])
         x, y = count.pop(0), count.pop(0)
@@ -29,7 +26,7 @@ def prefix_codes(tree):
 
     while(len(stack) > 0):
         #print(f'>>> {codes} // {stack}') # Debug
-        if(type(stack[-1][1]) == str): # Se for uma string (folha da árvore)
+        if(type(stack[-1][1]) != list): # Se for uma string (folha da árvore)
            codes[stack[-1][1]] = stack[-1][0][1:]
            stack.pop(-1)
         elif(len(stack[-1][1]) == 2): # Se tiver 2 filhos
