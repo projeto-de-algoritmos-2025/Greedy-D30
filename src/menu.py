@@ -67,7 +67,11 @@ class App():
             return
 
         # Obter sequências binárias para o header e o conteúdo
-        bin_header, bin_content = self.compression(filepath, content)
+        try:
+            bin_header, bin_content = self.compression(filepath, content)
+        except Exception as e:
+            messagebox.showerror("Erro", f"Não foi possível codificar o conteúdo:\n{e}")
+            return
 
         # Obter path do arquivo binário
         outpath = self.outpath(filepath, cmprssd_folder, cmprssd_id, bin_ext)
@@ -84,7 +88,9 @@ class App():
             return
 
         # Mensagem de saída (compressão bem-sucedida)
-        messagebox.showinfo("Compressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
+        sizes = f'Original: {len(content) + content.count('\n')} bytes\n' \
+                f'Comprimido: {len(bin_header) + math.ceil(len(bin_content)/8)} bytes'
+        messagebox.showinfo("Compressão Finalizada", f"> Conteúdo salvo em:\n{outpath}\n\n> Tamanho dos Arquivos:\n{sizes}")
 
     # Codifica a sequêcia de caracteres do arquivo desejado e gera um header
     def compression(self, filepath, content):
@@ -107,7 +113,7 @@ class App():
             'prefix': prefix # Dicionário de prefixos
         }
 
-        # Serializar o Header
+        # Serializar o header
         bin_header = json.dumps(header).encode('utf-8') # Serializa cada caracter do dicionário como um byte
         header['header'] = len(bin_header)-1 # Salva a quantidade de bytes do header
         
@@ -118,9 +124,10 @@ class App():
         size_bytes = json.dumps(header['header']).encode('utf-8') # Serializa em bytes o tamanho do header
         bin_header = b'{"header": ' + size_bytes + bin_header[12:] # Dicionário serializado, com seu próprio tamanho
         
-        # Visualizar o Header
+        # Visualizar o header
         if(self.header_bool.get()):
-            print(f'{'-'*100}\n{header}\n{'-'*100}')
+            print(f'{'='*64}\n{int((64-len(f'header for {os.path.basename(filepath)}'))/2)*' '}' \
+                  f'{f'header for {os.path.basename(filepath)}'}\n\n{header}\n{'='*64}')
         
         # Retornar header e conteúdo serializados
         return bin_header, bin_content
@@ -148,8 +155,17 @@ class App():
             return
         
         # Obter o header e o conteúdo desserializados
-        header, content = self.decompression(bits)
+        try:
+            header, content = self.decompression(bits)
+        except Exception as e:
+            messagebox.showerror("Erro", f"Não foi possível decodificar a sequência binária:\n{e}")
+            return
         
+        # Visualizar o header
+        if(self.header_bool.get()):
+            print(f'{'='*64}\n{int((64-len(f'header for {os.path.basename(filepath)}'))/2)*' '}' \
+                  f'{f'header for {os.path.basename(filepath)}'}\n\n{header}\n{'='*64}')
+
         # Obter path do arquivo de saída
         outpath = self.outpath(filepath, dcmprssd_folder, dcmprssd_id, header['ext'])
         if not outpath:
@@ -164,7 +180,9 @@ class App():
             return
         
         # Mensagem de saída (descompressão bem-sucedida)
-        messagebox.showinfo("Descompressão Finalizada", f"Conteúdo salvo em:\n{outpath}")
+        sizes = f'Comprimido: {int(len(bits)/8)} bytes\n' \
+                f'Descomprimido: {len(content) + content.count('\n')} bytes'
+        messagebox.showinfo("Descompressão Finalizada", f"> Conteúdo salvo em:\n{outpath}\n\n> Tamanho dos Arquivos:\n{sizes}")
     
     # Decodifica a sequêcia de binários do arquivo desejado
     def decompression(self, bits):
@@ -184,7 +202,7 @@ class App():
                 content += prefix[current_prefix]
                 current_prefix = ''
 
-        # Remover caracteres extras causados pela extensão de bits do bitarray
+        # Remover caracteres extras causados pela extensão de bits do Bitarray
         while(len(content) > header['string']):
             content = content[:-1]
         
