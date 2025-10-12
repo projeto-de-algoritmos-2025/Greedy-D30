@@ -111,6 +111,7 @@ class App():
             'content': math.ceil(len(bin_content)/8), # Quantidade de bytes do conteúdo codificado
             'string': n, # Quantidade de caracteres do conteúdo original
             'ext': os.path.splitext(filepath)[1], # Entensão do arquivo original
+            'bin': 0 if type(content) == str else 1, # Se o arquivo original foi lido como binário
             'prefix': prefix # Dicionário de prefixos
         }
 
@@ -139,7 +140,7 @@ class App():
     def on_decompress(self):
         # Selecionar arquivo para descompressão
         filepath = filedialog.askopenfilename(
-            title="Selecione um arquivo de texto (plain text)",
+            title="Selecione um arquivo binário",
             initialdir=".",
             filetypes=[("Binary files", f"*{bin_ext}")]
         )
@@ -174,7 +175,7 @@ class App():
 
         # Salvar o conteúdo desserializado no arquivo
         try:
-            if(header['ext'] != '.huff'):
+            if(not header['bin']):
                 with open(outpath, 'w', encoding='utf-8') as f:
                     f.write(content)
             else:
