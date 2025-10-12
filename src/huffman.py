@@ -29,7 +29,7 @@ def prefix_codes(tree):
 
     while(len(stack) > 0):
         #print(f'>>> {codes} // {stack}') # Debug
-        if(type(stack[-1][1]) == str): # Se for uma string (folha da árvore)
+        if(type(stack[-1][1]) != list): # Se for uma string (folha da árvore)
            codes[stack[-1][1]] = stack[-1][0][1:]
            stack.pop(-1)
         elif(len(stack[-1][1]) == 2): # Se tiver 2 filhos

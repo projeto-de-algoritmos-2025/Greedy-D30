@@ -15,9 +15,6 @@ cmprssd_id = '_cmp' # Identificador dos arquivos comprimidos
 dcmprssd_id = '_dcmp' # Identificador dos arquivos descomprimidos
 
 bin_ext = ".huff" # Extensão do arquivo binário comprimido
-plain_ext = "*.txt;*.md;*.csv;*.log;*.ini;*.conf;*.tsv;*.json;*.xml;*.html;*.yml;*.yaml;*.dockerfile;" \
-            "*.py;*.c;*.cpp;*.h;*.java;*.js;*.rb;*.php;*.go;*.rs;*.swift;" \
-            "*.ts;*.kt;*.pl;*.lua;*.sh;*.r;*.m;*.scala;*.vhdl;*.hs;*.m;" # Extensões de arquivos para compressão
 
 
 # Classe do Sistema
@@ -53,7 +50,7 @@ class App():
         filepath = filedialog.askopenfilename(
             title="Selecione um arquivo de texto (plain text)",
             initialdir='.',
-            filetypes=[("Plain Text files", plain_ext)]
+            filetypes=[("All files", "*.*")]
         )
         if not filepath:
             return
@@ -62,6 +59,10 @@ class App():
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 content = f.read()
+        except Exception as e:
+            with open(filepath, 'rb') as e:
+                content = bitarray()
+                content.fromfile(e)
         except Exception as e:
             messagebox.showerror("Erro", f"Não foi possível ler o arquivo:\n{e}")
             return
@@ -88,7 +89,7 @@ class App():
             return
 
         # Mensagem de saída (compressão bem-sucedida)
-        sizes = f'Original: {len(content) + content.count('\n')} bytes\n' \
+        sizes = f'Original: {os.path.getsize(filepath)} bytes\n' \
                 f'Comprimido: {len(bin_header) + math.ceil(len(bin_content)/8)} bytes'
         messagebox.showinfo("Compressão Finalizada", f"> Conteúdo salvo em:\n{outpath}\n\n> Tamanho dos Arquivos:\n{sizes}")
 
