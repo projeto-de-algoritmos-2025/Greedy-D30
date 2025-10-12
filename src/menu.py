@@ -48,7 +48,7 @@ class App():
     def on_compress(self):
         # Selecionar arquivo para compressão
         filepath = filedialog.askopenfilename(
-            title="Selecione um arquivo de texto (plain text)",
+            title="Selecione um arquivo para compressão",
             initialdir='.',
             filetypes=[("All files", "*.*")]
         )
@@ -59,7 +59,7 @@ class App():
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 content = f.read()
-        except Exception as e:
+        except UnicodeDecodeError as e:
             with open(filepath, 'rb') as e:
                 content = bitarray()
                 content.fromfile(e)
@@ -174,15 +174,19 @@ class App():
 
         # Salvar o conteúdo desserializado no arquivo
         try:
-            with open(outpath, 'w', encoding='utf-8') as f:
-                f.write(content)
+            if(header['ext'] != '.huff'):
+                with open(outpath, 'w', encoding='utf-8') as f:
+                    f.write(content)
+            else:
+                with open(outpath, 'wb') as f:
+                    bitarray(content).tofile(f)
         except Exception as e:
             messagebox.showerror("Erro", f"Não foi possível salvar o arquivo:\n{e}")
             return
         
         # Mensagem de saída (descompressão bem-sucedida)
         sizes = f'Comprimido: {int(len(bits)/8)} bytes\n' \
-                f'Descomprimido: {len(content) + content.count('\n')} bytes'
+                f'Descomprimido: {os.path.getsize(outpath)} bytes'
         messagebox.showinfo("Descompressão Finalizada", f"> Conteúdo salvo em:\n{outpath}\n\n> Tamanho dos Arquivos:\n{sizes}")
     
     # Decodifica a sequêcia de binários do arquivo desejado
