@@ -123,7 +123,7 @@ class App():
         val = len(str((bytes_number + header['header']))) > bytes_number # Se haverá aumento de 1 byte
         header['header'] += bytes_number + val # Corrige o número de bytes
 
-        size_bytes = json.dumps(header['header']).encode('utf-8') # Serializa em bytes o tamanho do header
+        size_bytes = str(header['header']).encode('utf-8') # Serializa em bytes o tamanho do header
         bin_header = b'{"header": ' + size_bytes + bin_header[12:] # Dicionário serializado, com seu próprio tamanho
         
         # Visualizar o header
@@ -195,7 +195,7 @@ class App():
         # Recuperar a quantidade de bytes do header e depois o header
         header_bytes_end = bits.index(bitarray(b', '))
         header_bytes = int(bits[88:header_bytes_end].tobytes())
-        header = json.loads(bits[:header_bytes*8].tobytes().decode('utf-8'))
+        header = json.loads(bits[:header_bytes*8].tobytes())
 
         # Recuperar o conteúdo
         content_bits = bits[header_bytes*8:] # Recupera os bits do conteúdo
